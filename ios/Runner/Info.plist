@@ -28,6 +28,8 @@
 	<true/>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>This app needs photo library access so you can analyze a skin image on device.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>This app uses the camera so you can capture a live skin image for on-device analysis.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
