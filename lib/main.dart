@@ -247,14 +247,6 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    const Text(
-                      'Everything still runs on-device. Pick the camera for a fresh shot, or choose a saved photo from your gallery.',
-                      style: TextStyle(
-                        height: 1.55,
-                        color: Color(0xFF5C4A41),
-                        fontSize: 15,
-                      ),
-                    ),
                     const SizedBox(height: 22),
                     _StatusCard(
                       isBusy: _isBusy,
@@ -890,7 +882,7 @@ class _ResultHeroCard extends StatelessWidget {
                               SizedBox(width: 10),
                               Expanded(
                                 child: Text(
-                                  'Animated result view for the latest uploaded or captured image',
+                                  'result view for the latest uploaded or captured image',
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.w700,
