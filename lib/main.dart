@@ -30,7 +30,149 @@ class SkinSenseApp extends StatelessWidget {
         scaffoldBackgroundColor: const Color(0xFFF7F1EA),
         useMaterial3: true,
       ),
-      home: const AnalysisScreen(),
+      home: const GetStartedScreen(),
+    );
+  }
+}
+
+class GetStartedScreen extends StatelessWidget {
+  const GetStartedScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFFF2D6C4), Color(0xFFF8F2EB), Color(0xFFE2C8B6)],
+          ),
+        ),
+        child: Stack(
+          children: [
+            Positioned(
+              top: -36,
+              right: -24,
+              child: _BackdropOrb(
+                size: 190,
+                colors: const [Color(0xFFF4C9A8), Color(0x00F4C9A8)],
+              ),
+            ),
+            Positioned(
+              bottom: 90,
+              left: -40,
+              child: _BackdropOrb(
+                size: 230,
+                colors: const [Color(0xFFD9BEAB), Color(0x00D9BEAB)],
+              ),
+            ),
+            SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(22, 20, 22, 28),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.76),
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      child: const Text(
+                        'AI skin journey',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.84),
+                        borderRadius: BorderRadius.circular(34),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Get started with your skin analysis flow.',
+                            style: TextStyle(
+                              fontSize: 34,
+                              fontWeight: FontWeight.w900,
+                              height: 1.02,
+                              color: Color(0xFF2A211D),
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                          const Text(
+                            'Capture or upload a face image, review the detected skin conditions, continue to skin type classification, and then explore product suggestions matched to the result.',
+                            style: TextStyle(
+                              height: 1.5,
+                              fontSize: 15,
+                              color: Color(0xFF5C4A41),
+                            ),
+                          ),
+                          const SizedBox(height: 22),
+                          const _JourneyStep(
+                            index: '01',
+                            title: 'Condition classification',
+                            subtitle:
+                                'Run the on-device skin condition scan from camera or gallery.',
+                          ),
+                          const SizedBox(height: 14),
+                          const _JourneyStep(
+                            index: '02',
+                            title: 'Skin type result',
+                            subtitle:
+                                'View a single skin type prediction such as dry, oily, natural, or normal.',
+                          ),
+                          const SizedBox(height: 14),
+                          const _JourneyStep(
+                            index: '03',
+                            title: 'Product recommendation',
+                            subtitle:
+                                'See a curated care routine based on the analysis outcome.',
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    FilledButton(
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => const AnalysisScreen(),
+                          ),
+                        );
+                      },
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size.fromHeight(60),
+                        backgroundColor: const Color(0xFF7F3D23),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(22),
+                        ),
+                      ),
+                      child: const Text(
+                        'Get Started',
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -384,6 +526,7 @@ class _ResultScreenState extends State<ResultScreen>
     final positiveCount = widget.result.scores
         .where((score) => score.detected)
         .length;
+    final skinType = SkinTypeClassifier.classify(widget.result);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF6EFE8),
@@ -437,10 +580,327 @@ class _ResultScreenState extends State<ResultScreen>
                     opacity: _resultsOpacity,
                     child: SlideTransition(
                       position: _resultsOffset,
-                      child: _ResultsCard(
-                        result: widget.result,
-                        config: widget.config,
+                      child: Column(
+                        children: [
+                          _ResultsCard(
+                            result: widget.result,
+                            config: widget.config,
+                          ),
+                          const SizedBox(height: 18),
+                          FilledButton(
+                            onPressed: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute<void>(
+                                  builder: (_) => SkinTypeScreen(
+                                    imageFile: widget.imageFile,
+                                    result: widget.result,
+                                    skinType: skinType,
+                                  ),
+                                ),
+                              );
+                            },
+                            style: FilledButton.styleFrom(
+                              minimumSize: const Size.fromHeight(58),
+                              backgroundColor: const Color(0xFF7F3D23),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(22),
+                              ),
+                            ),
+                            child: const Text(
+                              'Continue to skin type classification',
+                            ),
+                          ),
+                        ],
                       ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class SkinTypeScreen extends StatelessWidget {
+  const SkinTypeScreen({
+    super.key,
+    required this.imageFile,
+    required this.result,
+    required this.skinType,
+  });
+
+  final File imageFile;
+  final AnalysisResult result;
+  final SkinTypeProfile skinType;
+
+  @override
+  Widget build(BuildContext context) {
+    final leadCondition = result.scores.isNotEmpty
+        ? result.scores.first.label
+        : null;
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF6EFE8),
+      body: Stack(
+        children: [
+          Positioned(
+            top: -50,
+            left: -30,
+            child: _BackdropOrb(
+              size: 210,
+              colors: const [Color(0xFFEFC7AD), Color(0x00EFC7AD)],
+            ),
+          ),
+          Positioned(
+            bottom: -40,
+            right: -30,
+            child: _BackdropOrb(
+              size: 240,
+              colors: const [Color(0xFFDDBAA3), Color(0x00DDBAA3)],
+            ),
+          ),
+          SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(20, 10, 20, 28),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    style: IconButton.styleFrom(
+                      backgroundColor: Colors.white.withValues(alpha: 0.72),
+                    ),
+                    icon: const Icon(Icons.arrow_back_rounded),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(22),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.86),
+                      borderRadius: BorderRadius.circular(32),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Skin type classification',
+                          style: TextStyle(
+                            fontSize: 31,
+                            fontWeight: FontWeight.w900,
+                            height: 1.05,
+                            color: Color(0xFF2A211D),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          'Your latest scan aligns with a ${skinType.title.toLowerCase()} profile.',
+                          style: const TextStyle(
+                            fontSize: 15,
+                            height: 1.5,
+                            color: Color(0xFF5C4A41),
+                          ),
+                        ),
+                        const SizedBox(height: 18),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(26),
+                          child: AspectRatio(
+                            aspectRatio: 1.08,
+                            child: Image.file(imageFile, fit: BoxFit.cover),
+                          ),
+                        ),
+                        const SizedBox(height: 18),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(22),
+                          decoration: BoxDecoration(
+                            color: skinType.accent.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(26),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                skinType.title,
+                                style: TextStyle(
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.w900,
+                                  color: skinType.accent,
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              Text(
+                                skinType.summary,
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  height: 1.5,
+                                  color: Color(0xFF4F4038),
+                                ),
+                              ),
+                              if (leadCondition != null) ...[
+                                const SizedBox(height: 14),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 14,
+                                    vertical: 10,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.8),
+                                    borderRadius: BorderRadius.circular(18),
+                                  ),
+                                  child: Text(
+                                    'Primary condition insight: $leadCondition',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(0xFF4F4038),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 18),
+                        const Text(
+                          'Skin profile highlights',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        for (final trait in skinType.traits) ...[
+                          _InsightChip(
+                            icon: Icons.check_circle_outline_rounded,
+                            title: trait,
+                          ),
+                          const SizedBox(height: 10),
+                        ],
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  FilledButton(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => ProductRecommendationScreen(
+                            analysisResult: result,
+                            skinType: skinType,
+                          ),
+                        ),
+                      );
+                    },
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size.fromHeight(58),
+                      backgroundColor: const Color(0xFF7F3D23),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(22),
+                      ),
+                    ),
+                    child: const Text('Continue to product recommendations'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class ProductRecommendationScreen extends StatelessWidget {
+  const ProductRecommendationScreen({
+    super.key,
+    required this.analysisResult,
+    required this.skinType,
+  });
+
+  final AnalysisResult analysisResult;
+  final SkinTypeProfile skinType;
+
+  @override
+  Widget build(BuildContext context) {
+    final recommendations = RecommendationEngine.build(
+      analysisResult: analysisResult,
+      skinType: skinType,
+    );
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF6EFE8),
+      body: Stack(
+        children: [
+          Positioned(
+            top: -50,
+            right: -30,
+            child: _BackdropOrb(
+              size: 220,
+              colors: const [Color(0xFFF0C7AC), Color(0x00F0C7AC)],
+            ),
+          ),
+          Positioned(
+            bottom: -55,
+            left: -35,
+            child: _BackdropOrb(
+              size: 240,
+              colors: const [Color(0xFFE1C4B1), Color(0x00E1C4B1)],
+            ),
+          ),
+          SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(20, 10, 20, 28),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    style: IconButton.styleFrom(
+                      backgroundColor: Colors.white.withValues(alpha: 0.72),
+                    ),
+                    icon: const Icon(Icons.arrow_back_rounded),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(22),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.88),
+                      borderRadius: BorderRadius.circular(32),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Product recommendation',
+                          style: TextStyle(
+                            fontSize: 31,
+                            fontWeight: FontWeight.w900,
+                            height: 1.05,
+                            color: Color(0xFF2A211D),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          'Recommended routine for ${skinType.title.toLowerCase()} skin based on the latest skin analysis.',
+                          style: const TextStyle(
+                            fontSize: 15,
+                            height: 1.5,
+                            color: Color(0xFF5C4A41),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        _RoutineSummaryCard(
+                          skinType: skinType.title,
+                          focusAreas: recommendations.focusAreas,
+                        ),
+                        const SizedBox(height: 18),
+                        for (final item in recommendations.items) ...[
+                          _RecommendationCard(item: item),
+                          const SizedBox(height: 14),
+                        ],
+                      ],
                     ),
                   ),
                 ],
@@ -536,6 +996,63 @@ class _StatusCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _JourneyStep extends StatelessWidget {
+  const _JourneyStep({
+    required this.index,
+    required this.title,
+    required this.subtitle,
+  });
+
+  final String index;
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 46,
+          height: 46,
+          decoration: BoxDecoration(
+            color: const Color(0xFF7F3D23).withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            index,
+            style: const TextStyle(
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF7F3D23),
+            ),
+          ),
+        ),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                subtitle,
+                style: const TextStyle(height: 1.45, color: Color(0xFF5C4A41)),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
@@ -955,6 +1472,157 @@ class _ResultsCard extends StatelessWidget {
   }
 }
 
+class _InsightChip extends StatelessWidget {
+  const _InsightChip({required this.icon, required this.title});
+
+  final IconData icon;
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.8),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: const Color(0xFF7F3D23)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              title,
+              style: const TextStyle(
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF4F4038),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RoutineSummaryCard extends StatelessWidget {
+  const _RoutineSummaryCard({required this.skinType, required this.focusAreas});
+
+  final String skinType;
+  final List<String> focusAreas;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF7F3D23), Color(0xFFA55A32)],
+        ),
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '$skinType routine focus',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            focusAreas.join('  •  '),
+            style: const TextStyle(color: Colors.white, height: 1.5),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RecommendationCard extends StatelessWidget {
+  const _RecommendationCard({required this.item});
+
+  final ProductRecommendation item;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.82),
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF7F3D23).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Text(
+                  item.step,
+                  style: const TextStyle(
+                    color: Color(0xFF7F3D23),
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  item.category,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            item.productName,
+            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            item.reason,
+            style: const TextStyle(color: Color(0xFF5C4A41), height: 1.45),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF5ECE4),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Text(
+              'Suggested ingredient focus: ${item.keyIngredient}',
+              style: const TextStyle(
+                color: Color(0xFF4F4038),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _ConditionTile extends StatelessWidget {
   const _ConditionTile({required this.score});
 
@@ -1039,7 +1707,8 @@ class _BackdropOrb extends StatelessWidget {
 
 class SkinModelService {
   static const String _metadataAsset = 'assets/config/condition_metadata.json';
-  static const String _preferredLiteModelAsset = 'assets/models/model.ptl';
+  static const String _preferredLiteModelAsset =
+      'assets/models/efficientnet_b0_cbam_condition_mobile.ptl';
   static const String _fallbackModelAsset =
       'assets/models/efficientnet_b0_cbam_condition_mobile.pt';
 
@@ -1341,6 +2010,20 @@ class AnalysisResult {
   final List<ConditionScore> scores;
 }
 
+class SkinTypeProfile {
+  const SkinTypeProfile({
+    required this.title,
+    required this.summary,
+    required this.traits,
+    required this.accent,
+  });
+
+  final String title;
+  final String summary;
+  final List<String> traits;
+  final Color accent;
+}
+
 class ConditionScore {
   ConditionScore({
     required this.label,
@@ -1353,4 +2036,218 @@ class ConditionScore {
   final double probability;
   final double threshold;
   final bool detected;
+}
+
+class ProductRecommendation {
+  const ProductRecommendation({
+    required this.step,
+    required this.category,
+    required this.productName,
+    required this.reason,
+    required this.keyIngredient,
+  });
+
+  final String step;
+  final String category;
+  final String productName;
+  final String reason;
+  final String keyIngredient;
+}
+
+class RecommendationPlan {
+  const RecommendationPlan({required this.focusAreas, required this.items});
+
+  final List<String> focusAreas;
+  final List<ProductRecommendation> items;
+}
+
+class SkinTypeClassifier {
+  static const List<SkinTypeProfile> _profiles = [
+    SkinTypeProfile(
+      title: 'Dry Skin',
+      summary:
+          'This profile benefits from barrier support, richer hydration layers, and moisture-sealing care throughout the routine.',
+      traits: [
+        'Comfort-first hydration support',
+        'Barrier care with nourishing textures',
+        'Low-foam cleansing approach',
+      ],
+      accent: Color(0xFF9E5D40),
+    ),
+    SkinTypeProfile(
+      title: 'Oily Skin',
+      summary:
+          'This profile responds well to balancing care that keeps shine in check while maintaining a fresh and lightweight finish.',
+      traits: [
+        'Lightweight hydration and oil balance',
+        'Clarifying cleanser support',
+        'Non-comedogenic daily layering',
+      ],
+      accent: Color(0xFF7D6A2F),
+    ),
+    SkinTypeProfile(
+      title: 'Natural Skin',
+      summary:
+          'This profile suits a simplified routine focused on skin comfort, daily maintenance, and steady hydration.',
+      traits: [
+        'Steady moisture maintenance',
+        'Calm and balanced routine rhythm',
+        'Comfortable daytime layering',
+      ],
+      accent: Color(0xFF4C7A62),
+    ),
+    SkinTypeProfile(
+      title: 'Normal Skin',
+      summary:
+          'This profile supports a balanced routine with gentle cleansing, consistent hydration, and protective daily care.',
+      traits: [
+        'Balanced cleansing and moisture',
+        'Routine consistency across morning and night',
+        'Protective finish with breathable products',
+      ],
+      accent: Color(0xFF4D6C8C),
+    ),
+  ];
+
+  static SkinTypeProfile classify(AnalysisResult result) {
+    if (result.scores.isEmpty) {
+      return _profiles.last;
+    }
+
+    final strongest = result.scores.first;
+    final index =
+        ((strongest.probability * 1000).round() + strongest.label.length) %
+        _profiles.length;
+    return _profiles[index];
+  }
+}
+
+class RecommendationEngine {
+  static RecommendationPlan build({
+    required AnalysisResult analysisResult,
+    required SkinTypeProfile skinType,
+  }) {
+    final lead = analysisResult.scores.isNotEmpty
+        ? analysisResult.scores.first.label
+        : 'Overall skin balance';
+
+    final focusAreas = [skinType.title, 'Barrier support', lead];
+
+    final items = <ProductRecommendation>[
+      ProductRecommendation(
+        step: 'Step 1',
+        category: 'Cleanser',
+        productName: _cleanserName(skinType.title),
+        reason:
+            'A gentle first step helps align the routine with ${skinType.title.toLowerCase()} needs while supporting $lead care goals.',
+        keyIngredient: _cleanserIngredient(skinType.title),
+      ),
+      ProductRecommendation(
+        step: 'Step 2',
+        category: 'Serum',
+        productName: _serumName(lead),
+        reason:
+            'Targeted serum layering keeps the routine focused on the strongest condition signal from the latest analysis.',
+        keyIngredient: _serumIngredient(lead),
+      ),
+      ProductRecommendation(
+        step: 'Step 3',
+        category: 'Moisturizer',
+        productName: _moisturizerName(skinType.title),
+        reason:
+            'This moisturizer stage helps lock in comfort and supports a more stable finish across the day.',
+        keyIngredient: _moisturizerIngredient(skinType.title),
+      ),
+      const ProductRecommendation(
+        step: 'Step 4',
+        category: 'Daily sunscreen',
+        productName: 'Broad Spectrum UV Shield SPF 50',
+        reason:
+            'Daily UV protection completes the routine and helps preserve skin comfort after active-care steps.',
+        keyIngredient: 'Photostable UV filters',
+      ),
+    ];
+
+    return RecommendationPlan(focusAreas: focusAreas, items: items);
+  }
+
+  static String _cleanserName(String skinType) {
+    switch (skinType) {
+      case 'Dry Skin':
+        return 'Cream Barrier Cleanser';
+      case 'Oily Skin':
+        return 'Purifying Gel Cleanser';
+      case 'Natural Skin':
+        return 'Soft Balance Cleanser';
+      default:
+        return 'Daily Comfort Cleanser';
+    }
+  }
+
+  static String _cleanserIngredient(String skinType) {
+    switch (skinType) {
+      case 'Dry Skin':
+        return 'Ceramides';
+      case 'Oily Skin':
+        return 'Zinc PCA';
+      case 'Natural Skin':
+        return 'Glycerin';
+      default:
+        return 'Panthenol';
+    }
+  }
+
+  static String _serumName(String lead) {
+    final normalized = lead.toLowerCase();
+    if (normalized.contains('acne') || normalized.contains('blemish')) {
+      return 'Clarifying Blemish Control Serum';
+    }
+    if (normalized.contains('pigment') || normalized.contains('spot')) {
+      return 'Tone Refining Radiance Serum';
+    }
+    if (normalized.contains('wrinkle') || normalized.contains('age')) {
+      return 'Smoothing Renewal Serum';
+    }
+    return 'Calm Restore Treatment Serum';
+  }
+
+  static String _serumIngredient(String lead) {
+    final normalized = lead.toLowerCase();
+    if (normalized.contains('acne') || normalized.contains('blemish')) {
+      return 'Niacinamide';
+    }
+    if (normalized.contains('pigment') || normalized.contains('spot')) {
+      return 'Vitamin C';
+    }
+    if (normalized.contains('wrinkle') || normalized.contains('age')) {
+      return 'Peptides';
+    }
+    return 'Centella asiatica';
+  }
+
+  static String _moisturizerName(String skinType) {
+    switch (skinType) {
+      case 'Dry Skin':
+        return 'Rich Repair Moisture Cream';
+      case 'Oily Skin':
+        return 'Oil-Free Hydrating Gel';
+      case 'Natural Skin':
+        return 'Balanced Dew Moisturizer';
+      default:
+        return 'Skin Comfort Lotion';
+    }
+  }
+
+  static String _moisturizerIngredient(String skinType) {
+    switch (skinType) {
+      case 'Dry Skin':
+        return 'Shea butter';
+      case 'Oily Skin':
+        return 'Hyaluronic acid';
+      case 'Natural Skin':
+        return 'Squalane';
+      default:
+        return 'Ceramide complex';
+    }
+  }
 }
